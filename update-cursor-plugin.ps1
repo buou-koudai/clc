@@ -1,6 +1,9 @@
 # 插件自动更新脚本
 # 适用于Cursor插件的自动更新脚本，适用于Windows系统
-# 使用方法: curl -s https://raw.githubusercontent.com/buou-koudai/clc/main/update-cursor-plugin.ps1 | powershell -
+# 使用方法: iwr -useb https://raw.githubusercontent.com/buou-koudai/clc/main/update-cursor-plugin.ps1 | iex
+
+# 设置输出编码为UTF-8，以正确显示中文
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # 配置参数
 $GithubRepo = "buou-koudai/clc" # GitHub用户名和仓库名
