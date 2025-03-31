@@ -1,8 +1,8 @@
-# 插件自动更新脚本
-# 适用于Cursor插件的自动更新脚本，适用于Windows系统
-# 使用方法: iwr -useb https://raw.githubusercontent.com/buou-koudai/clc/main/update-cursor-plugin.ps1 | iex
+# Cursor Plugin Auto Update Script
+# For Windows systems
+# Usage: iwr -useb https://raw.githubusercontent.com/buou-koudai/clc/main/update-cursor-plugin.ps1 | iex
 
-# 确保合适的编码设置
+# Ensure proper encoding settings
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
@@ -11,27 +11,27 @@ $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 # Set TLS to 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# 配置参数
-$GithubRepo = "buou-koudai/clc" # GitHub用户名和仓库名
+# Configuration parameters
+$GithubRepo = "buou-koudai/clc" # GitHub username and repository
 $PluginName = "cursor-lazy-cat"
 $PluginDisplayName = "Cursor Lazy Cat"
 $ReleaseTagUrl = "https://api.github.com/repos/$GithubRepo/releases/latest"
 $VSCodeExtDir = "$env:USERPROFILE\.vscode\extensions"
 $CursorExtDir = "$env:USERPROFILE\.cursor\extensions"
 
-# 主函数
+# Main function
 function Update-CursorPlugin {
     try {
-        # 显示欢迎信息
+        # Display welcome message
         Clear-Host
         Write-Output ""
         Write-Output "================================================="
-        Write-Success "$PluginDisplayName 自动更新工具"
+        Write-Success "$PluginDisplayName Auto Update Tool"
         Write-Output "================================================="
         Write-Output ""
 
-        # 检查是否已安装插件
-        Write-Info "正在检查本地安装情况..."
+        # Check if plugin is installed
+        Write-Info "Checking local installation..."
 
         $vsCodePluginDirs = Get-ChildItem -Path $VSCodeExtDir -Directory | Where-Object { $_.Name -like "buoukoudai.$PluginName*" }
         $cursorPluginDirs = Get-ChildItem -Path $CursorExtDir -Directory | Where-Object { $_.Name -like "buoukoudai.$PluginName*" }
@@ -44,39 +44,39 @@ function Update-CursorPlugin {
         $cursorVersion = "0.0.0"
         $installedLocation = ""
 
-        # 获取VSCode插件版本
+        # Get VSCode plugin version
         if ($vsCodePluginDir) {
             try {
                 $packageJsonPath = Join-Path $vsCodePluginDir.FullName "package.json"
                 if (Test-Path $packageJsonPath) {
                     $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
                     $vsCodeVersion = $packageJson.version
-                    Write-Info "VSCode插件版本: $vsCodeVersion"
+                    Write-Info "VSCode plugin version: $vsCodeVersion"
                 }
             } catch {
-                Write-Warning "无法读取VSCode插件版本: $_"
+                Write-Warning "Unable to read VSCode plugin version: $_"
             }
         } else {
-            Write-Info "未检测到VSCode插件安装"
+            Write-Info "VSCode plugin not detected"
         }
 
-        # 获取Cursor插件版本
+        # Get Cursor plugin version
         if ($cursorPluginDir) {
             try {
                 $packageJsonPath = Join-Path $cursorPluginDir.FullName "package.json"
                 if (Test-Path $packageJsonPath) {
                     $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
                     $cursorVersion = $packageJson.version
-                    Write-Info "Cursor插件版本: $cursorVersion"
+                    Write-Info "Cursor plugin version: $cursorVersion"
                 }
             } catch {
-                Write-Warning "无法读取Cursor插件版本: $_"
+                Write-Warning "Unable to read Cursor plugin version: $_"
             }
         } else {
-            Write-Info "未检测到Cursor插件安装"
+            Write-Info "Cursor plugin not detected"
         }
 
-        # 确定最终版本和安装位置
+        # Determine final version and installation location
         if ([version]$vsCodeVersion -gt [version]$cursorVersion) {
             $localVersion = $vsCodeVersion
             $installedLocation = "VSCode"
@@ -85,22 +85,22 @@ function Update-CursorPlugin {
             $installedLocation = "Cursor"
         } elseif ([version]$vsCodeVersion -eq [version]$cursorVersion -and [version]$vsCodeVersion -ne [version]"0.0.0") {
             $localVersion = $vsCodeVersion
-            $installedLocation = "两者"
+            $installedLocation = "Both"
         } else {
-            Write-Warning "未检测到已安装的插件"
-            $installedLocation = "未安装"
+            Write-Warning "No installed plugin detected"
+            $installedLocation = "None"
         }
 
-        if ($installedLocation -ne "未安装") {
-            Write-Success "已安装的插件版本: $localVersion (安装位置: $installedLocation)"
+        if ($installedLocation -ne "None") {
+            Write-Success "Installed plugin version: $localVersion (Location: $installedLocation)"
         } else {
-            Write-Warning "未检测到已安装的插件，将执行全新安装"
+            Write-Warning "No installed plugin detected, will perform a fresh installation"
         }
 
-        # 检查GitHub上的最新版本
-        Write-Info "正在从GitHub检查最新版本..."
+        # Check latest version on GitHub
+        Write-Info "Checking latest version from GitHub..."
 
-        # 使用GitHub API检查最新版本
+        # Use GitHub API to check the latest version
         $headers = @{
             "Accept" = "application/vnd.github.v3+json"
         }
@@ -108,86 +108,86 @@ function Update-CursorPlugin {
         $latestVersion = $latestRelease.tag_name -replace "v", ""
         $downloadUrl = $latestRelease.assets | Where-Object { $_.name -like "*.vsix" } | Select-Object -First 1 -ExpandProperty browser_download_url
 
-        Write-Success "GitHub最新版本: $latestVersion"
+        Write-Success "GitHub latest version: $latestVersion"
 
-        # 比较版本号
+        # Compare version numbers
         if ([version]$latestVersion -gt [version]$localVersion) {
-            Write-Info "发现新版本! 本地版本: $localVersion, 最新版本: $latestVersion"
+            Write-Info "New version found! Local version: $localVersion, Latest version: $latestVersion"
             
-            # 下载新版本
+            # Download new version
             $tempDir = [System.IO.Path]::GetTempPath()
             $downloadPath = Join-Path $tempDir "buoukoudai.$PluginName-$latestVersion.vsix"
             
-            Write-Info "正在下载新版本..."
+            Write-Info "Downloading new version..."
             Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath
             
             if (Test-Path $downloadPath) {
-                Write-Success "下载完成: $downloadPath"
+                Write-Success "Download completed: $downloadPath"
                 
-                # 卸载旧版本
-                if ($installedLocation -eq "VSCode" -or $installedLocation -eq "两者") {
-                    Write-Info "正在卸载VSCode中的旧版本..."
+                # Uninstall old version
+                if ($installedLocation -eq "VSCode" -or $installedLocation -eq "Both") {
+                    Write-Info "Uninstalling old version from VSCode..."
                     Start-Process -FilePath "code" -ArgumentList "--uninstall-extension", "buoukoudai.$PluginName" -NoNewWindow -Wait
                 }
                 
-                if ($installedLocation -eq "Cursor" -or $installedLocation -eq "两者") {
-                    Write-Info "正在卸载Cursor中的旧版本..."
+                if ($installedLocation -eq "Cursor" -or $installedLocation -eq "Both") {
+                    Write-Info "Uninstalling old version from Cursor..."
                     Start-Process -FilePath "cursor" -ArgumentList "--uninstall-extension", "buoukoudai.$PluginName" -NoNewWindow -Wait
                 }
                 
-                # 安装新版本
-                Write-Info "正在安装新版本到VSCode中..."
+                # Install new version
+                Write-Info "Installing new version to VSCode..."
                 Start-Process -FilePath "code" -ArgumentList "--install-extension", $downloadPath -NoNewWindow -Wait
                 
-                Write-Info "正在安装新版本到Cursor中..."
+                Write-Info "Installing new version to Cursor..."
                 Start-Process -FilePath "cursor" -ArgumentList "--install-extension", $downloadPath -NoNewWindow -Wait
                 
-                Write-Success "更新完成! $PluginDisplayName 已更新到版本 $latestVersion"
+                Write-Success "Update completed! $PluginDisplayName has been updated to version $latestVersion"
                 
-                # 清理下载文件
+                # Clean up download file
                 Remove-Item $downloadPath -Force
             } else {
-                Write-Error "下载失败！"
+                Write-Error "Download failed!"
             }
         } else {
-            Write-Success "已经是最新版本！"
+            Write-Success "Already on the latest version!"
         }
     } catch {
-        Write-Error "检查或下载更新时出错: $_"
+        Write-Error "Error checking or downloading updates: $_"
     } finally {
         Write-Output ""
         Write-Output "================================================="
-        Write-Success "操作完成"
+        Write-Success "Operation completed"
         Write-Output "================================================="
 
-        # 等待用户按键退出
-        Write-Output "按任意键退出..."
+        # Wait for user to press a key
+        Write-Output "Press any key to exit..."
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     }
 }
 
-# 颜色定义
+# Color definitions
 function Write-ColorOutput($ForegroundColor) {
-    # 保存当前的颜色
+    # Save current color
     $fc = $host.UI.RawUI.ForegroundColor
     
-    # 设置新的颜色
+    # Set new color
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
     
-    # 如果参数数量大于1，那么剩余的参数都被当作要输出的对象
+    # If there are more than 1 parameter, treat the rest as objects to output
     if ($args.Count -gt 0) {
         Write-Output $args
     }
     
-    # 恢复颜色
+    # Restore color
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
-# 输出带颜色的文本
-function Write-Info($message) { Write-ColorOutput Blue "[信息] $message" }
-function Write-Success($message) { Write-ColorOutput Green "[成功] $message" }
-function Write-Warning($message) { Write-ColorOutput Yellow "[警告] $message" }
-function Write-Error($message) { Write-ColorOutput Red "[错误] $message" }
+# Output colored text
+function Write-Info($message) { Write-ColorOutput Blue "[INFO] $message" }
+function Write-Success($message) { Write-ColorOutput Green "[SUCCESS] $message" }
+function Write-Warning($message) { Write-ColorOutput Yellow "[WARNING] $message" }
+function Write-Error($message) { Write-ColorOutput Red "[ERROR] $message" }
 
-# 执行更新
+# Execute update
 Update-CursorPlugin 
