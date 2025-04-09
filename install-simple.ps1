@@ -88,8 +88,9 @@ try {
 Write-Host "`nStep 3: Downloading latest plugin version..." -ForegroundColor White
 try {
     $vsixFileName = "$pluginName-$latestVersion.vsix"
-    $downloadUrl = "https://github.com/$githubRepo/releases/download/v$latestVersion/$vsixFileName"
-    Write-Host "  Download URL: $downloadUrl" -ForegroundColor Gray
+    $originalUrl = "https://github.com/$githubRepo/releases/download/v$latestVersion/$vsixFileName"
+    $downloadUrl = "https://gh-proxy.com/$originalUrl"
+    Write-Host "  Download URL (with gh-proxy acceleration): $downloadUrl" -ForegroundColor Gray
     Invoke-WebRequest -Uri $downloadUrl -OutFile "$pluginName.vsix" -ErrorAction Stop
     Write-Host "  Download completed successfully." -ForegroundColor Green
 } catch {
