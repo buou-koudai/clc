@@ -1,8 +1,8 @@
-﻿# Cursor Lazy Cat Plugin Installer - With GitHub Proxy
-# PowerShell 脚本，用于安装/更新 Cursor Lazy Cat 插件，支持加速下载
+# Cursor Lazy Cat Plugin Installer
+# Simple PowerShell script to install the plugin
 
-Write-Host "Cursor Lazy Cat 插件安装器" -ForegroundColor Cyan
-Write-Host "==============================" -ForegroundColor Cyan
+Write-Host "Cursor Lazy Cat Plugin Installer" -ForegroundColor Cyan
+Write-Host "============================" -ForegroundColor Cyan
 Write-Host ""
 
 $pluginPublisher = "buoukoudai"
@@ -10,18 +10,19 @@ $pluginName = "cursor-lazy-cat"
 $fullPluginPrefix = "$pluginPublisher.$pluginName"
 $githubRepo = "buou-koudai/clc"
 
-Write-Host "步骤 1：检查已安装插件..." -ForegroundColor White
+Write-Host "Step 1: Checking for installed plugin..." -ForegroundColor White
 
 $pluginDir = "$env:USERPROFILE\.cursor\extensions"
 $installedVersion = "0.0.0"
 $pluginInstalled = $false
 
-Write-Host "  检查目录：$pluginDir" -ForegroundColor Gray
+Write-Host "  Checking directory: $pluginDir" -ForegroundColor Gray
 if (Test-Path $pluginDir) {
     $pluginInstallDir = Get-ChildItem -Path $pluginDir -Directory | Where-Object { $_.Name -like "$fullPluginPrefix*" } | Sort-Object { $_.Name } -Descending | Select-Object -First 1
 
     if ($pluginInstallDir) {
         $pluginInstalled = $true
+
         if ($pluginInstallDir.Name -match "$fullPluginPrefix-(\d+\.\d+\.\d+)") {
             $installedVersion = $Matches[1]
         } else {
@@ -33,92 +34,93 @@ if (Test-Path $pluginDir) {
                         $installedVersion = $packageJson.version
                     }
                 } catch {
-                    Write-Host "  警告：无法解析 package.json" -ForegroundColor Yellow
+                    Write-Host "  WARNING: Could not parse package.json" -ForegroundColor Yellow
                 }
             }
         }
-        Write-Host "  已安装插件：$($pluginInstallDir.Name) (v$installedVersion)" -ForegroundColor Green
+
+        Write-Host "  Installed plugin found: $($pluginInstallDir.Name) (v$installedVersion)" -ForegroundColor Green
     } else {
-        Write-Host "  未在 $pluginDir 中找到插件" -ForegroundColor Yellow
+        Write-Host "  No installed plugin found in $pluginDir" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "  警告：目录 $pluginDir 不存在，正在创建..." -ForegroundColor Yellow
+    Write-Host "  WARNING: Directory $pluginDir does not exist" -ForegroundColor Yellow
     try {
         New-Item -Path $pluginDir -ItemType Directory -Force | Out-Null
-        Write-Host "  已创建目录：$pluginDir" -ForegroundColor Green
+        Write-Host "  Created directory: $pluginDir" -ForegroundColor Green
     } catch {
-        Write-Host "  错误：创建目录失败：$($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  ERROR: Failed to create directory: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 if (-not $pluginInstalled) {
-    Write-Host "  将执行新安装。" -ForegroundColor Yellow
+    Write-Host "  Will perform new installation." -ForegroundColor Yellow
 }
 
-Write-Host "`n步骤 2：检查 GitHub 上的最新版本..." -ForegroundColor White
+Write-Host "`nStep 2: Checking latest version on GitHub..." -ForegroundColor White
 try {
     $repoUrl = "https://api.github.com/repos/$githubRepo/releases/latest"
     $latestRelease = Invoke-RestMethod -Uri $repoUrl -ErrorAction Stop
     $latestVersion = $latestRelease.tag_name -replace "v", ""
-    Write-Host "  GitHub 上的最新版本：v$latestVersion" -ForegroundColor Green
+    Write-Host "  Latest version on GitHub: v$latestVersion" -ForegroundColor Green
 
     if ($pluginInstalled) {
         $needsUpdate = [version]$latestVersion -gt [version]$installedVersion
         if (-not $needsUpdate) {
-            Write-Host "`n你已安装最新版，无需更新。" -ForegroundColor Green
-            Read-Host "按回车退出"
+            Write-Host "`nYou already have the latest version installed. No update needed." -ForegroundColor Green
+            Read-Host "Press Enter to exit"
             exit
         } else {
-            Write-Host "`n发现新版本，将下载并更新。" -ForegroundColor Yellow
+            Write-Host "`nA newer version is available. Will download and update." -ForegroundColor Yellow
         }
     }
 } catch {
-    Write-Host "  错误：无法检查最新版本！$($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  ERROR: Failed to check latest version! $($_.Exception.Message)" -ForegroundColor Red
     if ($pluginInstalled) {
-        $continuePrompt = Read-Host "  是否继续安装？(y/n)"
+        $continuePrompt = Read-Host "  Continue with update anyway? (y/n)"
         if ($continuePrompt -ne "y" -and $continuePrompt -ne "Y") {
-            Write-Host "`n已退出安装。" -ForegroundColor Yellow
+            Write-Host "`nExiting without update." -ForegroundColor Yellow
             exit
         }
     }
 }
 
-Write-Host "`n步骤 3：下载插件（使用加速）..." -ForegroundColor White
+Write-Host "`nStep 3: Downloading latest plugin version..." -ForegroundColor White
 try {
     $vsixFileName = "$pluginName-$latestVersion.vsix"
-    $rawDownloadUrl = "https://github.com/$githubRepo/releases/download/v$latestVersion/$vsixFileName"
-    $downloadUrl = "https://gh-proxy.com/$rawDownloadUrl"  # 使用加速
-
-    Write-Host "  下载链接：$downloadUrl" -ForegroundColor Gray
+    $downloadUrl = "https://github.com/$githubRepo/releases/download/v$latestVersion/$vsixFileName"
+    Write-Host "  Download URL: $downloadUrl" -ForegroundColor Gray
     Invoke-WebRequest -Uri $downloadUrl -OutFile "$pluginName.vsix" -ErrorAction Stop
-    Write-Host "  下载成功。" -ForegroundColor Green
+    Write-Host "  Download completed successfully." -ForegroundColor Green
 } catch {
-    Write-Host "  错误：下载失败！$($_.Exception.Message)" -ForegroundColor Red
-    Read-Host "按回车退出"
+    Write-Host "  ERROR: Download failed! $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "`nInstallation failed. Please check your internet connection and try again." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
     exit
 }
 
-Write-Host "`n步骤 4：检测 Cursor 是否运行..." -ForegroundColor White
+Write-Host "`nStep 4: Checking if Cursor is running..." -ForegroundColor White
 $cursorProcess = Get-Process -Name "Cursor" -ErrorAction SilentlyContinue
 if ($cursorProcess) {
-    Write-Host "  提示：Cursor 当前正在运行，请稍后重启以生效插件。" -ForegroundColor Yellow
+    Write-Host "  INFO: Cursor is currently running. Installation will proceed without closing it." -ForegroundColor Cyan
+    Write-Host "  NOTE: You will need to restart Cursor after installation to activate the plugin." -ForegroundColor Yellow
 }
 
-Write-Host "`n步骤 5：开始安装插件..." -ForegroundColor White
+Write-Host "`nStep 5: Installing plugin..." -ForegroundColor White
 $cursorExists = Get-Command -Name cursor -ErrorAction SilentlyContinue
 if ($cursorExists) {
-    Write-Host "  使用 Cursor CLI 进行安装..." -ForegroundColor Green
+    Write-Host "  Installing using Cursor CLI..." -ForegroundColor Green
     if ($pluginInstalled) {
-        Write-Host "  正在卸载旧版本..." -ForegroundColor Yellow
+        Write-Host "  Uninstalling previous version first..." -ForegroundColor Yellow
         Start-Process -FilePath "cursor" -ArgumentList "--uninstall-extension", "$fullPluginPrefix" -NoNewWindow -Wait
     }
     Start-Process -FilePath "cursor" -ArgumentList "--install-extension", "$pluginName.vsix" -NoNewWindow -Wait
 } else {
-    Write-Host "  警告：未找到 cursor 命令，使用手动安装..." -ForegroundColor Yellow
+    Write-Host "  WARNING: Cursor command not found in PATH, attempting manual installation..." -ForegroundColor Yellow
     try {
         if (-not (Test-Path $pluginDir)) {
             New-Item -Path $pluginDir -ItemType Directory -Force | Out-Null
-            Write-Host "  创建目录：$pluginDir" -ForegroundColor Green
+            Write-Host "  Created directory: $pluginDir" -ForegroundColor Green
         }
 
         $targetDir = Join-Path $pluginDir "$fullPluginPrefix-$latestVersion"
@@ -126,23 +128,24 @@ if ($cursorExists) {
             Remove-Item -Path $targetDir -Recurse -Force
         }
 
-        Write-Host "  解压插件到：$targetDir..." -ForegroundColor Green
+        Write-Host "  Extracting plugin to $targetDir..." -ForegroundColor Green
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::ExtractToDirectory("$PWD\$pluginName.vsix", $targetDir)
     } catch {
-        Write-Host "`n  错误：手动安装失败！$($_.Exception.Message)" -ForegroundColor Red
-        Read-Host "按回车退出"
+        Write-Host "`n  ERROR: Manual installation failed! $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "`nInstallation failed. Please try again or install manually." -ForegroundColor Red
+        Read-Host "Press Enter to exit"
         exit
     }
 }
 
-Write-Host "`n步骤 6：清理临时文件..." -ForegroundColor White
+Write-Host "`nStep 6: Cleaning up..." -ForegroundColor White
 Remove-Item -Path "$pluginName.vsix" -Force
 
 if ($pluginInstalled) {
-    Write-Host "`n插件已成功更新到 v$latestVersion" -ForegroundColor Green
+    Write-Host "`nUpdate successful! Plugin updated to v$latestVersion" -ForegroundColor Green
 } else {
-    Write-Host "`n插件 v$latestVersion 安装成功！" -ForegroundColor Green
+    Write-Host "`nInstallation successful! Plugin v$latestVersion has been installed." -ForegroundColor Green
 }
-Write-Host "请重启 Cursor 以激活插件。" -ForegroundColor Green
-Read-Host "按回车退出"
+Write-Host "Please restart Cursor to use the plugin." -ForegroundColor Green
+Read-Host "Press Enter to exit"
